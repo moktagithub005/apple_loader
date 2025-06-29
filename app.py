@@ -8,10 +8,15 @@ import io
 
 # Firebase Initialization
 if not firebase_admin._apps:
-    cred = credentials.Certificate("firebase-key.json")  # Your downloaded JSON
-    firebase_admin.initialize_app(cred, {
-        'storageBucket': 'your-project-id.appspot.com'
-    })
+    import json
+
+firebase_key = json.loads(st.secrets["FIREBASE_KEY"])
+cred = credentials.Certificate(firebase_key)
+firebase_admin.initialize_app(cred, {
+    'storageBucket': 'apple-store-d26b3.appspot.com'
+})
+
+
 
 # Firestore & Storage references
 db = firestore.client()
