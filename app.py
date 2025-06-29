@@ -5,24 +5,57 @@ from datetime import datetime
 import uuid
 from PIL import Image
 import io
+import json
 
-# Firebase Initialization
+# Firebase Initialization - Fixed Version
 if not firebase_admin._apps:
-    import json
-
-firebase_key = json.loads(st.secrets["FIREBASE_KEY"])
-cred = credentials.Certificate(firebase_key)
-firebase_admin.initialize_app(cred, {
-    'storageBucket': 'apple-store-d26b3.appspot.com'
-})
-
-
+    try:
+        # Method 1: If FIREBASE_KEY is a JSON string in secrets
+        if "FIREBASE_KEY" in st.secrets:
+            # Try to parse as JSON string first
+            try:
+                firebase_key = json.loads(st.secrets["FIREBASE_KEY"])
+                cred = credentials.Certificate(firebase_key)
+            except json.JSONDecodeError:
+                # If it fails, maybe it's already a dict in secrets.toml
+                firebase_key = dict(st.secrets["FIREBASE_KEY"])
+                cred = credentials.Certificate(firebase_key)
+        
+        # Method 2: If individual keys are stored separately in secrets
+        elif "type" in st.secrets:
+            firebase_key = {
+                "type": st.secrets["type"],
+                "project_id": st.secrets["project_id"],
+                "private_key_id": st.secrets["private_key_id"],
+                "private_key": st.secrets["private_key"].replace('\\n', '\n'),  # Fix newlines
+                "client_email": st.secrets["client_email"],
+                "client_id": st.secrets["client_id"],
+                "auth_uri": st.secrets["auth_uri"],
+                "token_uri": st.secrets["token_uri"],
+                "auth_provider_x509_cert_url": st.secrets["auth_provider_x509_cert_url"],
+                "client_x509_cert_url": st.secrets["client_x509_cert_url"]
+            }
+            cred = credentials.Certificate(firebase_key)
+        
+        else:
+            st.error("❌ Firebase credentials not found in secrets!")
+            st.stop()
+            
+        # Initialize Firebase
+        firebase_admin.initialize_app(cred, {
+            'storageBucket': 'apple-store-d26b3.appspot.com'
+        })
+        
+    except Exception as e:
+        st.error(f"❌ Firebase initialization error: {str(e)}")
+        st.error("Please check your Firebase configuration in Streamlit secrets.")
+        st.stop()
 
 # Firestore & Storage references
 db = firestore.client()
 bucket = storage.bucket()
 
-# Streamlit UI
+# Rest of your code remains the same...
 st.title("🍎 Apple Dataset Collector")
 st.markdown("### सेब की तस्वीरें जमा करें - Apple Images Collection")
 
